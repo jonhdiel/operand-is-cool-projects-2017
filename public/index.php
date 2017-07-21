@@ -270,7 +270,7 @@ $app->post('/v1/bankaccounts', function() use ($app) {
 });
 
 $app->options('/v1/bankaccounts', function() use ($app) {
-	$app->response->setHeader('Acess-Control-Allow-Origin', '*')
+	$app->response->setHeader('Acess-Control-Allow-Origin', '*');
 });
 
 //Updates bank account based on primary key
@@ -322,7 +322,7 @@ $app->get('/v1/bankaccounts/search/{id:[0-9]+}', function($id) use ($app) {
     
     $sql = "SELECT id,name,balance FROM bank_account WHERE id = ?";
 
-    $result = $app->db->query($sql,, array($id));
+    $result = $app->db->query($sql, array($id));
     $result->setFetchMode(Phalcon\Db::FETCH_OBJ);
 
     $data  = array();
@@ -333,7 +333,7 @@ $app->get('/v1/bankaccounts/search/{id:[0-9]+}', function($id) use ($app) {
         $response->setStatusCode(404, 'Not Found');
         $response->setJsonContent(array('status' => 'NOT-FOUND'));
     } else {
-        $sqlOperations = "SELECT id, operation, bank_account_id, date, value FROM bank_account_operations WHERE bank_account_id = ". $id. "ORDER BY date";
+        $sqlOperations = "SELECT id, operation, bank_account_id, date, value FROM bank_account_operations WHERE bank_account_id = ". $id. " ORDER BY date";
         $resultOperations = $app->db->query($sqlOperations);
         $resultOperations->setFetchMode(Phalcon\Db::FETCH_OBJ);
         $bankAccountOperations = $resultOperations->fetchAll();
@@ -350,6 +350,67 @@ $app->get('/v1/bankaccounts/search/{id:[0-9]+}', function($id) use ($app) {
     }
 });
 
+$app->post('/v1/bankaccounts/deposit', function () use ($app){
+    $depositInfo = $app->request->getPost();
+    if (!$depositInfo) {
+        $depositInfo = (array)$app->request->getJsonRawBody();
+    }
+
+    $response = new Phalcon\Http\Response();
+
+    try {
+            $result = $app->db->insert("bank_account_operations",
+                array("deposit",$depositInfo['bank_account_id'], $depositInfo['value'],date('Y-m-d H:i:s')),
+                array("operation", "bank_account_id", "value", "date")
+            );
+
+            //atualizar saldo da conta
+            $sqlUpdate = "UPDATE bank_account set balance = (SELECT SUM(value) as balance FROM bank_account_operations WHERE bank_account_id = ?) WHERE id=?";
+            $app->db->query($sqlUpdate, array($depositInfo['bank_account_id'], $depositInfo['bank_account_id']));
+
+            $response->setStatusCode(201, "Created");
+            $response->setJsonContent(array('status' => 'OK'));
+
+        } catch (Exception $e) {
+            $response->setStatusCode(409, "Conflict");
+            $errors[] = $e->getMessage();
+            $response->setJsonContent(array('status' => 'ERROR', 'messages' => $errors));
+        }
+
+        return $response;
+
+});
+
+$app->post('/v1/bankaccounts/saque', function () use ($app){
+    $saqueInfo = $app->request->getPost();
+    if (!$saqueInfo) {
+        $saqueInfo = (array)$app->request->getJsonRawBody();
+    }
+
+    $response = new Phalcon\Http\Response();
+
+        try {
+            $result = $app->db->insert("bank_account_operations",
+                array("saque",$saqueInfo['bank_account_id'], $saqueInfo['value']*-1,date('Y-m-d H:i:s')),
+                array("operation", "bank_account_id", "value", "date")
+            );
+
+            //atualizar saldo da conta
+            $sqlUpdate = "UPDATE bank_account set balance = (SELECT SUM(value) as balance FROM bank_account_operations WHERE bank_account_id = ?) WHERE id=?";
+            $app->db->query($sqlUpdate, array($saqueInfo['bank_account_id'], $saqueInfo['bank_account_id']));
+
+            $response->setStatusCode(201, "Created");
+            $response->setJsonContent(array('status' => 'OK'));
+
+        } catch (Exception $e) {
+            $response->setStatusCode(409, "Conflict");
+            $errors[] = $e->getMessage();
+            $response->setJsonContent(array('status' => 'ERROR', 'messages' => $errors));
+        }
+
+        return $response;
+
+});
 
 
 $app->get('/', function() use ($app){

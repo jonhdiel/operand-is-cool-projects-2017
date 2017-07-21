@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+<meta charset="utf-8">
 <!-- CSS BOOTSTRAP -->
 <!-- Latest compiled and minified CSS -->
 <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
@@ -24,6 +25,7 @@
 
 
 
+
 	<div class="container-fluid" id="app">
 	  	<div class="page-header">
 	  	  <h1>Operand <small>is cool</small></h1>
@@ -41,7 +43,7 @@
         <div class="col-xs-12">
           <div class="panel panel-primary">
             <div class="panel-heading">
-              <h3 class="panel-title">Conta Bancária {{ bankAccount1.name }}  <span>Saldo: {{bankAccount.balance}} </span></h3>
+              <h3 class="panel-title">Conta Bancária {{ bankAccount1.name }}  <span>Saldo: {{bankAccount1.balance}} </span></h3>
             </div>
             <div class="panel-body">
               <table class="table table-hover">
@@ -78,20 +80,19 @@
                 <form>
                   <div class="form-group">
                     <label>Conta Bancária</label>
-                      <select class="form-control">
-                        <option>Conta 1</option>
-                        <option>Conta 2</option>
+                      <select v-model="depositAccountModel" class="form-control">
+                        <option value='1'>Conta 1</option>                      
                       </select>
                     </div>
                     <div class="form-group">
                         <label for="depositValue">Valor do Depósito</label>
-                        <input type="text" class="form-control" id="depositValue">
+                        <input v-model="depositValueModel" type="text" class="form-control" id="depositValue">
                     </div>
                 </form>
               </div>
               <div class="modal-footer">
                 <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-primary">Salvar</button>
+                <button @click="deposito" type="submit" class="btn btn-primary">Salvar</button>
               </div>
             </div><!-- /.modal-content -->
           </div><!-- /.modal-dialog -->
@@ -108,20 +109,19 @@
                 <form>
                   <div class="form-group">
                     <label>Conta Bancária</label>
-                      <select class="form-control">
-                        <option>Conta 1</option>
-                        <option>Conta 2</option>
+                      <select v-model="saqueAccountModel" class="form-control">
+                        <option value="1">Conta 1</option>
                       </select>
                     </div>
                     <div class="form-group">
                         <label for="saqueValue">Valor do Saque</label>
-                        <input type="text" class="form-control" id="saqueValue">
+                        <input v-model="saqueValueModel" type="text" class="form-control" id="saqueValue">
                     </div>
                 </form>
               </div>
               <div class="modal-footer">
                 <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-primary">Salvar</button>
+                <button @click="saque" type="submit" class="btn btn-primary">Salvar</button>
               </div>
             </div><!-- /.modal-content -->
           </div><!-- /.modal-dialog -->
@@ -164,6 +164,10 @@
               balance: 0,
               operations: [],
             },
+            saqueValueModel: 0,
+            depositValueModel: 0,
+            saqueAccountModel: 1,
+            depositAccountModel: 1,
 
         },
         methods: {
@@ -176,7 +180,35 @@
             .catch(function (error) {
               console.log(error);
             });
-          }
+          },
+          deposito: function () {
+            var vm = this;
+            axios.post('/v1/bankaccounts/deposit', {
+              bank_account_id: vm.depositAccountModel,
+              value: vm.depositValueModel,
+            })
+            .then(function(response) {
+              console.log(response);
+              vm.loadDataFromAccount1();
+            })          
+            .catch(function(error) {
+              console.log(error);
+            });
+          },
+          saque: function () {
+            var vm = this;
+            axios.post('/v1/bankaccounts/saque', {
+              bank_account_id: vm.saqueAccountModel,
+              value: vm.saqueValueModel,
+            })
+            .then(function(response) {
+              console.log(response);
+              vm.loadDataFromAccount1();
+            })          
+            .catch(function(error) {
+              console.log(error);
+            });
+          },
         },
         mounted: function () {
           var vm = this;
